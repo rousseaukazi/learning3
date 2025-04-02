@@ -79,6 +79,7 @@ loader.load(
         });
         
         scene.add(model);
+            
         
         // Store all animations
         animations = gltf.animations;
@@ -89,24 +90,60 @@ loader.load(
         // Log available animations to help with debugging
         console.log('Available animations:', animations.map(a => a.name));
         
-        // Play initial animation (optional)
         if (animations.length > 0) {
-            currentAction = mixer.clipAction(animations[0]);
+            // First animation setup
+            currentAction = mixer.clipAction(animations[2]);
+            currentAction.setLoop(THREE.LoopOnce);
+            currentAction.clampWhenFinished = true;
+            
+            let hipBone;
+            model.traverse(node => {
+                if (node.isBone && node.name === "mixamorigHips") {
+                    hipBone = node;
+                }
+            });
+            
+            mixer.addEventListener('finished', function(e) {
+                if (e.action === mixer.clipAction(animations[2])) {
+                    // Get ending position
+                    const worldPos = new THREE.Vector3();
+                    hipBone.getWorldPosition(worldPos);
+                    
+                    // IMMEDIATELY stop the first animation to prevent frames after "finished"
+                    currentAction.stop();
+                    
+                    // Apply position immediately
+                    model.position.copy(worldPos);
+                    
+                    // Setup second animation
+                    const secondAction = mixer.clipAction(animations[1]);
+                    secondAction.reset();
+                    secondAction.setLoop(THREE.LoopOnce);
+                    secondAction.clampWhenFinished = true;
+                    
+                    // Play second animation immediately on next frame
+                    requestAnimationFrame(() => {
+                        secondAction.play();
+                    });
+                    
+                    currentAction = secondAction;
+                }
+            });
+            
             currentAction.play();
         }
     },
     undefined,
     function (error) {
         console.error('An error occurred loading the model:', error);
-    }
-);
+    });
 
 // Adjust camera position
-camera.position.set(0, 2, 5);  // Move camera up slightly and back
+camera.position.set(-15, 9, 0);  // Position camera further back, higher up for better view
 camera.lookAt(0, 0, 0);  // Make camera look at the center
 
 // Add after setting up the camera and controls
-const defaultCameraPosition = new THREE.Vector3(0, 2, 5);
+const defaultCameraPosition = new THREE.Vector3(-15, 9, 0);
 const defaultLookAt = new THREE.Vector3(0, 0, 0);
 
 // Add event listener for spacebar
@@ -160,7 +197,7 @@ function animate() {
 
     renderer.render(scene, camera);
 }
-animate();
+animate(); //main animation loop
 
 // Handle window resizing
 window.addEventListener('resize', () => {
