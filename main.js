@@ -4,11 +4,15 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // Create scene, camera and renderer
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87CEEB);  // Sky blue
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer();
 
-// Setup renderer
+// Setup renderer with better quality
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio); // Sharper rendering
+renderer.shadowMap.enabled = true;  // Enable shadows
+renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows
 document.body.appendChild(renderer.domElement);
 
 // Create a loader and load the model
@@ -16,13 +20,29 @@ const loader = new GLTFLoader();
 let mixer;
 let animations = [];
 
-// Add lights to the scene
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+// Enhance lighting
+const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // Increased intensity
 scene.add(ambientLight);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5); // Increased intensity
 directionalLight.position.set(5, 5, 5);
+directionalLight.castShadow = true; // Enable shadow casting
+directionalLight.shadow.mapSize.width = 2048;  // Higher quality shadows
+directionalLight.shadow.mapSize.height = 2048;
 scene.add(directionalLight);
+
+// Add a nice floor
+const floorGeometry = new THREE.PlaneGeometry(20, 20);
+const floorMaterial = new THREE.MeshStandardMaterial({ 
+    color: 0x91B496,  // Soft green
+    roughness: 0.8,
+    metalness: 0.2
+});
+const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+floor.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+floor.position.y = -0.01; // Slightly below the model to prevent z-fighting
+floor.receiveShadow = true; // Floor can receive shadows
+scene.add(floor);
 
 // Add OrbitControls
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -41,6 +61,19 @@ loader.load(
         
         // You might need to scale the model if it's too big or small
         model.scale.set(1, 1, 1);  // Adjust these values as needed
+        
+        // Enable shadows for the model
+        model.traverse((node) => {
+            if (node.isMesh) {
+                node.castShadow = true;
+                node.receiveShadow = true;
+                // Improve material quality
+                if (node.material) {
+                    node.material.roughness = 0.5;
+                    node.material.metalness = 0.2;
+                }
+            }
+        });
         
         scene.add(model);
         
