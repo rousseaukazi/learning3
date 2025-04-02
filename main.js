@@ -20,6 +20,9 @@ const loader = new GLTFLoader();
 let mixer;
 let animations = [];
 
+// Create a map to store active animations
+let currentAction = null;
+
 // Enhance lighting
 const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // Increased intensity
 scene.add(ambientLight);
@@ -83,13 +86,13 @@ loader.load(
         // Create an AnimationMixer
         mixer = new THREE.AnimationMixer(model);
         
-        // Find and play the "stand" animation
-        const standAnim = animations.find(anim => anim.name === "stand");
-        if (standAnim) {
-            const action = mixer.clipAction(standAnim);
-            action.play();
-        } else {
-            console.log('Available animations:', animations.map(a => a.name));
+        // Log available animations to help with debugging
+        console.log('Available animations:', animations.map(a => a.name));
+        
+        // Play initial animation (optional)
+        if (animations.length > 0) {
+            currentAction = mixer.clipAction(animations[0]);
+            currentAction.play();
         }
     },
     undefined,
@@ -116,6 +119,30 @@ window.addEventListener('keydown', (event) => {
         // Reset controls target and update
         controls.target.copy(defaultLookAt);
         controls.update();
+    }
+});
+
+// Add event listener for number keys
+window.addEventListener('keydown', (event) => {
+    // Only proceed if we have animations and a mixer
+    if (!animations.length || !mixer) return;
+    
+    // Get the animation index based on key pressed (1-5)
+    const animationIndex = parseInt(event.key) - 1;
+    
+    // Check if the key pressed is 1-5 and we have an animation at that index
+    if (animationIndex >= 0 && animationIndex < 5 && animationIndex < animations.length) {
+        // Stop current animation
+        if (currentAction) {
+            currentAction.stop();
+        }
+        
+        // Start new animation
+        currentAction = mixer.clipAction(animations[animationIndex]);
+        currentAction.play();
+        
+        // Log which animation is playing
+        console.log('Playing animation:', animations[animationIndex].name);
     }
 });
 
