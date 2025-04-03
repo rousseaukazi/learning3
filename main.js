@@ -1,3 +1,4 @@
+import TWEEN from 'tween';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -112,8 +113,9 @@ loader.load(
                     // IMMEDIATELY stop the first animation to prevent frames after "finished"
                     currentAction.stop();
                     
-                    // Apply position immediately
-                    model.position.copy(worldPos);
+                    model.position.x = worldPos.x;
+                    model.position.y = 0;
+                    model.position.z = worldPos.z;
                     
                     // Setup second animation
                     const secondAction = mixer.clipAction(animations[1]);
@@ -186,6 +188,7 @@ window.addEventListener('keydown', (event) => {
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
+    TWEEN.update();
 
     // Update the controls
     controls.update();
